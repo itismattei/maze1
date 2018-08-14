@@ -1,7 +1,6 @@
-/* aaaa
- * Questo programma invia tramite comunicazione UART
- * il comando FORWARD (F) alla scheda TI
- *
+/*
+ * Questo programma implementa un automa di controllonvia
+ * per rover.
  */
 
 
@@ -46,6 +45,6 @@ int main(){
 		cout << "Automa improvvisamente interrotto!" <<endl;
 		exit (-1);
 	}
-	
+
 	return 0;
 }
