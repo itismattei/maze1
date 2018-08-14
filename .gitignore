@@ -1,8 +1,7 @@
-<<<<<<< HEAD
 #file da ignorare
 src/.cproject
 src/.project
-=======
+
 # Prerequisites
 *.d
 
@@ -35,4 +34,3 @@ src/.project
 *.exe
 *.out
 *.app
->>>>>>> 63d2edc5d2d1f9cd138f99da69f311c1e39985f8
