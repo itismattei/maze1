@@ -20,6 +20,15 @@ public:
 
 public:
 
+	//! nomenclatura dei lati
+	// ^   <---direzione di avanzamento rover
+	// |      1
+  // |   ________
+	// |   |      |
+	// | 0 |      | 2
+	// |   |______|
+	//         3
+
 	int mLato[4];
 	int mColore;
 	static int ID;

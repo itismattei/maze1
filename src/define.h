@@ -15,4 +15,8 @@ enum STATI{
 };
 
 
+// alcune definizioni di distanza
+#define     SPAZIO_LIBERO         150  //il valore e' in mm
+#define     SPAZIO_LIBERO_ANT     250  //il valore e' in mm
+
 #endif //_DEFINE_H_

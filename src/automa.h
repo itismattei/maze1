@@ -7,6 +7,7 @@
 //! misurazioni del drone e il caricamento dei dati nelle liste del percorso
 
 #include "define.h"
+#include <string>
 
 class Automa {
 
@@ -22,6 +23,20 @@ public:
   int distEncoder;
   //! registra dati cella
   int recordData;
+
+private:
+  /*! \fn void Automa::stampa(ofstream &, string);
+   *  \brief Stampa su file e a video.
+   *  \param ofstream e string.
+   *  \return void
+   */
+  void stampa(ofstream &, string);
+  /*! \fn void Automa::rangeAngle(int);
+   *  \brief Centra nell'intervallo l'angolo al valore piu' prossimo al multiplo di 90°.
+   *  \param int.
+   *  \return int: angolo arrotondato
+   */
+  int rangeAngle(int);
 };
 
 #endif  //_AUTOMA_H_

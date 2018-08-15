@@ -14,7 +14,7 @@ using namespace std;
 #include "automa.h"
 
 
-int Automa::run(TxRxcmd &PIPE){
+int Automa::run(TxRxcmd &com){
 
   list<Cella> L1;
   Cella Q1, Q2;
@@ -61,26 +61,27 @@ int Automa::run(TxRxcmd &PIPE){
         cout << contatore << " invio il comando 'F' ";
         outF << contatore <<" invio il comando 'F' ";
         /// AVANZA
-        PIPE.sendCmd('F');
+        com.sendCmd('F');
         /// attende 5 ms
         nextTime = millis () + 5 ;
         while(millis() < nextTime);
         /// legge il buffer di ricezione e memorizza i bytes disponibili
-        if(PIPE.receiveCmd()){
+        if(com.receiveCmd()){
           ///legge l'encoder
-          PIPE.sendCmd('D', 10);
+          com.sendCmd('D', 10);
           /// attende 5 ms
           nextTime = millis () + 5 ;
           while(millis() < nextTime);
 
           /// legge il buffer di ricezione e memorizza i bytes disponibili
-          if (PIPE.receiveCmd()){
-            int valore = PIPE.convertiDatoRaw();
+          if (com.receiveCmd()){
+            int valore = com.convertiDatoRaw();
             cout << endl <<  "encoder " << (valore - distEncoder) << endl;
             if ((valore - distEncoder) < 200 && (valore - distEncoder) > 100){
               if (recordData){
                 /// registra i dati della cella
                 recordData = false;
+                registraCella(qTemp, com, outF);
               }
             }
             if ((valore - distEncoder) > 270){
@@ -106,12 +107,12 @@ int Automa::run(TxRxcmd &PIPE){
       break;
 
       case DESTRA:
-        PIPE.sendCmd('R');
+        com.sendCmd('R');
         /// attende 5 ms
         nextTime = millis () + 5 ;
         while(millis() < nextTime);
         /// legge il buffer di ricezione e memorizza i bytes disponibili
-        j = PIPE.receiveCmd();
+        j = com.receiveCmd();
 
         if (j){
           stato = SINISTRA;
@@ -126,7 +127,7 @@ int Automa::run(TxRxcmd &PIPE){
 
       case SINISTRA:
         ///legge l'encoder
-        PIPE.sendCmd('D', 10);
+        com.sendCmd('D', 10);
         /// attende 5 ms
         nextTime = millis () + 5 ;
         while(millis() < nextTime);
@@ -134,10 +135,10 @@ int Automa::run(TxRxcmd &PIPE){
         /// legge il buffer di ricezione e memorizza i bytes disponibili
         int ris;
 
-        ris = PIPE.receiveCmd();
+        ris = com.receiveCmd();
 
         if (ris){
-          int valore = PIPE.convertiDatoRaw();
+          int valore = com.convertiDatoRaw();
           cout << endl <<  "encoder " << valore << endl;
           distEncoder = valore;
           stato = 3;
@@ -151,24 +152,24 @@ int Automa::run(TxRxcmd &PIPE){
 
       case FINE:
 
-        PIPE.sendCmd('F');
+        com.sendCmd('F');
         /// attende 5 ms
         nextTime = millis () + 5 ;
         while(millis() < nextTime);
         /// legge il buffer di ricezione e memorizza i bytes disponibili
-        j = PIPE.receiveCmd();
+        j = com.receiveCmd();
         if (j){
 
           ///legge il sensore di gas
-          PIPE.sendCmd('D', 13);
+          com.sendCmd('D', 13);
           /// attende 5 ms
           nextTime = millis () + 5 ;
           while(millis() < nextTime);
 
-          ris = PIPE.receiveCmd();
+          ris = com.receiveCmd();
 
           if (ris){
-            int valore = PIPE.convertiDatoRaw();
+            int valore = com.convertiDatoRaw();
             cout << "valore Alcool " << valore << endl;
             if(valore>3200){
               stato = FINE;
@@ -214,15 +215,15 @@ int Automa::run(TxRxcmd &PIPE){
 
       case RESET:
         ///legge l'encoder
-        PIPE.sendCmd('D', 10);
+        com.sendCmd('D', 10);
         /// attende 5 ms
         nextTime = millis () + 5 ;
         while(millis() < nextTime);
 
-        ris = PIPE.receiveCmd();
+        ris = com.receiveCmd();
 
         if (ris){
-          int valore = PIPE.convertiDatoRaw();
+          int valore = com.convertiDatoRaw();
           distEncoder = valore;
           cout <<  "encoder reset " << (distEncoder) << endl;
           stato = INIZIO;
@@ -239,15 +240,15 @@ int Automa::run(TxRxcmd &PIPE){
 
       case GASREAD:
         ///legge il sensore di gas
-        PIPE.sendCmd('D', 13);
+        com.sendCmd('D', 13);
         /// attende 5 ms
         nextTime = millis () + 5 ;
         while(millis() < nextTime);
 
-        ris = PIPE.receiveCmd();
+        ris = com.receiveCmd();
 
         if (ris){
-          int valore = PIPE.convertiDatoRaw();
+          int valore = com.convertiDatoRaw();
           cout << "valore Alcool " << valore << endl;
 
           stato = GASREAD;
@@ -398,8 +399,8 @@ int Automa::run(TxRxcmd &PIPE){
 void Automa::registraCella(Cella &C, TxRxcmd &com, ofstream &outF){
 
     int nextTime;
-    cout << "invio il comando 'D' 2 " << endl;
-    outF << " invio il comando 'D' 2 ";
+    /// muro di sinistra
+    stampa(outF, "invio il comando 'D' 2 ");
     com.sendCmd('D', 2);
     /// attende 5 ms
     nextTime = millis () + 10 ;
@@ -413,8 +414,7 @@ void Automa::registraCella(Cella &C, TxRxcmd &com, ofstream &outF){
       outF << d1 << endl;
     }
 
-    cout << "invio il comando 'D' 3 " << endl;
-    outF << " invio il comando 'D' 3 ";
+    stampa(outF, "invio il comando 'D' 3 ");
     com.sendCmd('D', 3);
     /// attende 5 ms
     nextTime = millis () + 10 ;
@@ -426,10 +426,106 @@ void Automa::registraCella(Cella &C, TxRxcmd &com, ofstream &outF){
       d2 = com.convertiDatoRaw();
       cout << d2 << endl;
       outF << d2 << endl;
-      if (d1 < 150 || d2 < 150) {
+      if (d1 < SPAZIO_LIBERO || d2 < SPAZIO_LIBERO) {
         /// presenza del muro
         C.mLato[0] = 1;
       }
     }
 
+    stampa(outF, "invio il comando 'D' 1 ");
+    /// muro anteriore
+    com.sendCmd('D', 1);
+    /// attende 5 ms
+    nextTime = millis () + 10 ;
+    while(millis() < nextTime);
+
+    if (com.receiveCmd()){
+      d1 = com.convertiDatoRaw();
+      cout << d1 << endl;
+      outF << d1 << endl;
+      if (d1 < SPAZIO_LIBERO_ANT) {
+        /// presenza del muro anteriore
+        C.mLato[1] = 1;
+      }
+    }
+
+    /// muro di destra
+    stampa(outF, "invio il comando 'D' 4 ");
+    com.sendCmd('D', 4);
+    /// attende 5 ms
+    nextTime = millis () + 10 ;
+    while(millis() < nextTime);
+    /// legge il buffer di ricezione e memorizza i bytes disponibili
+
+    if (com.receiveCmd()){
+      d1 = com.convertiDatoRaw();
+      cout << d1 << endl;
+      outF << d1 << endl;
+    }
+
+    stampa(outF, "invio il comando 'D' 5 ");
+    com.sendCmd('D', 5);
+    /// attende 5 ms
+    nextTime = millis () + 10 ;
+    while(millis() < nextTime);
+
+    /// legge il buffer di ricezione e memorizza i bytes disponibili
+    if (com.receiveCmd()){
+      d2 = com.convertiDatoRaw();
+      cout << d2 << endl;
+      outF << d2 << endl;
+      if (d1 < SPAZIO_LIBERO || d2 < SPAZIO_LIBERO) {
+        /// presenza del muro
+        C.mLato[2] = 1;
+      }
+    }
+
+    // qui si valuta la rotazione dell'asse di avanzamento rispetto all'angolo
+    // iniziale
+    // sensore 6: giroscopio
+    stampa(outF, "invio il comando 'D' 6 ");
+    com.sendCmd('D', 6);
+    /// attende 5 ms
+    nextTime = millis () + 10 ;
+    while(millis() < nextTime);
+
+    /// legge il buffer di ricezione e memorizza i bytes disponibili
+    if (com.receiveCmd()){
+      d2 = com.convertiDatoRaw();
+      cout << d2 << endl;
+      outF << d2 << endl;
+      // l'angolo letto non sara' proprio un multiplo di 90 e va quindi
+      // arrotondato
+      C.mAngolo = rangeAngle(d2);
+    }
+}
+
+
+void Automa::stampa(ofstream &outF, string stringa){
+  cout << stringa << endl;
+  outF << stringa;
+}
+
+
+/*! \fn void Automa::rangeAngle(int);
+ *  \brief Centra nell'intervallo l'angolo al valore piu' prossimo al multiplo di 90°.
+ *  \param int.
+ *  \return int: angolo arrotondato
+ */
+int Automa::rangeAngle(int val){
+
+  if (val < 95 && val > 85)
+    return 90;
+
+  if (val < 185 && val > 175)
+    return 180;
+
+  if (val < -85 && val > -95)
+    return -90;
+
+  if (val < -175 && val > -185)
+    return -180;
+
+  if (val < 275 && val > 265)
+    return 270;
 }
