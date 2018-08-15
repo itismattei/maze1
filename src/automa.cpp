@@ -14,9 +14,9 @@ using namespace std;
 #include "automa.h"
 
 
-int Automa::run(TxRxcmd &com){
+int Automa::run(TxRxcmd &com, list<Cella> &L1){
 
-  list<Cella> L1;
+
   Cella Q1, Q2;
   Cella qTemp;
   unsigned int nextTime ;
@@ -82,6 +82,8 @@ int Automa::run(TxRxcmd &com){
                 /// registra i dati della cella
                 recordData = false;
                 registraCella(qTemp, com, outF);
+                qTemp.upID();   // aggirna id della cella
+                L1.push_back(qTemp);
               }
             }
             if ((valore - distEncoder) > 270){
@@ -91,18 +93,10 @@ int Automa::run(TxRxcmd &com){
             }
             else
               stato = AVANZA;
-
           }
           else
 
             cout<< "errore di comunicazione"<< endl;
-          /*printf("%d\n", PIPE.convertiDatoRaw());
-          d1 = PIPE.convertiDatoRaw();
-          outF << d1 << endl;
-          if(d1 > 300){
-            PIPE.sendCmd('F');
-
-          }*/
         }
       break;
 
@@ -112,9 +106,7 @@ int Automa::run(TxRxcmd &com){
         nextTime = millis () + 5 ;
         while(millis() < nextTime);
         /// legge il buffer di ricezione e memorizza i bytes disponibili
-        j = com.receiveCmd();
-
-        if (j){
+        if (com.receiveCmd()){
           stato = SINISTRA;
         }
         else
@@ -133,11 +125,8 @@ int Automa::run(TxRxcmd &com){
         while(millis() < nextTime);
 
         /// legge il buffer di ricezione e memorizza i bytes disponibili
-        int ris;
 
-        ris = com.receiveCmd();
-
-        if (ris){
+        if (com.receiveCmd()){
           int valore = com.convertiDatoRaw();
           cout << endl <<  "encoder " << valore << endl;
           distEncoder = valore;
@@ -157,8 +146,8 @@ int Automa::run(TxRxcmd &com){
         nextTime = millis () + 5 ;
         while(millis() < nextTime);
         /// legge il buffer di ricezione e memorizza i bytes disponibili
-        j = com.receiveCmd();
-        if (j){
+
+        if (com.receiveCmd()){
 
           ///legge il sensore di gas
           com.sendCmd('D', 13);
@@ -166,9 +155,7 @@ int Automa::run(TxRxcmd &com){
           nextTime = millis () + 5 ;
           while(millis() < nextTime);
 
-          ris = com.receiveCmd();
-
-          if (ris){
+          if (com.receiveCmd()){
             int valore = com.convertiDatoRaw();
             cout << "valore Alcool " << valore << endl;
             if(valore>3200){
@@ -193,24 +180,10 @@ int Automa::run(TxRxcmd &com){
       break;
 
 
-/*      case FINE:
-
-        PIPE.sendCmd('S');
-        /// attende 5 ms
-        nextTime = millis() + 5 ;
-        while(millis() < nextTime);
-        /// legge il buffer di ricezione e memorizza i bytes disponibili
-        j = PIPE.receiveCmd();
-        stato = STOP;
-
-
-      break;
-*/
-
       case STOP:
         sleep(1);
         cout << "Fermo!" << endl;
-        stato = 5;
+        stato = STOP;
       break;
 
       case RESET:
@@ -220,9 +193,7 @@ int Automa::run(TxRxcmd &com){
         nextTime = millis () + 5 ;
         while(millis() < nextTime);
 
-        ris = com.receiveCmd();
-
-        if (ris){
+        if (com.receiveCmd()){
           int valore = com.convertiDatoRaw();
           distEncoder = valore;
           cout <<  "encoder reset " << (distEncoder) << endl;
@@ -245,9 +216,7 @@ int Automa::run(TxRxcmd &com){
         nextTime = millis () + 5 ;
         while(millis() < nextTime);
 
-        ris = com.receiveCmd();
-
-        if (ris){
+        if (com.receiveCmd()){
           int valore = com.convertiDatoRaw();
           cout << "valore Alcool " << valore << endl;
 

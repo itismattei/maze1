@@ -17,6 +17,8 @@ public:
 	/// imposta il valore del lato (si intende occupato)
 	inline void setLato(int lato, int valore){ if (lato < 4 && lato > 0) mLato[lato] = valore;}
 	inline int getLato(int lato) { if (lato < 4 && lato > 0) return mLato[lato]; }
+	//! aggiorna ID quando si vogliono copie della cella differenziate per ID
+	inline void upID() {ID += 1; myID = ID;}
 
 public:
 

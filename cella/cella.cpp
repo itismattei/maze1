@@ -38,6 +38,7 @@ Cella::Cella( const Cella & q){
 		mC = q.mC;
 		mR = q.mR;
 		mAngolo = q.mAngolo;
+		// la copia ha comunque identificatore differente
 	}
 }
 

@@ -8,12 +8,13 @@
 
 #include "define.h"
 #include <string>
+#include <list>
 
 class Automa {
 
 public:
   Automa(){ stato = statoPrec = INIZIO; distEncoder = 0;}
-  int run(TxRxcmd &);
+  int run(TxRxcmd &, list<Cella> &);
   void registraCella(Cella &, TxRxcmd &, ofstream &);
 
   int stato;
