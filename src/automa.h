@@ -7,6 +7,7 @@
 //! misurazioni del drone e il caricamento dei dati nelle liste del percorso
 
 #include "define.h"
+#include "sensori.h"
 #include <string>
 #include <list>
 
@@ -16,6 +17,7 @@ public:
   Automa(){ stato = statoPrec = INIZIO; distEncoder = 0;}
   int run(TxRxcmd &, list<Cella> &);
   void registraCella(Cella &, TxRxcmd &, ofstream &);
+  void leggiSensori(TxRxcmd &, Sensori &);
 
   int stato;
   int statoPrec;
@@ -38,6 +40,9 @@ private:
    *  \return int: angolo arrotondato
    */
   int rangeAngle(int);
+  vector<Sensori> S1;
+
 };
+
 
 #endif  //_AUTOMA_H_

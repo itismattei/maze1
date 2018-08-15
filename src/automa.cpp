@@ -16,8 +16,6 @@ using namespace std;
 
 int Automa::run(TxRxcmd &com, list<Cella> &L1){
 
-
-  Cella Q1, Q2;
   Cella qTemp;
   unsigned int nextTime ;
   unsigned int microseconds = 600000;   //200 ms
@@ -29,8 +27,6 @@ int Automa::run(TxRxcmd &com, list<Cella> &L1){
 
   L1.push_back(qTemp);
 
-  cout << "ID Q1: " << Q1.printID() << endl;
-  cout << "ID Q2: " << Q2.printID() << endl;
 
   /// apro un file in scrittura
 	ofstream outF("dati.txt", ios::app);
@@ -497,4 +493,29 @@ int Automa::rangeAngle(int val){
 
   if (val < 275 && val > 265)
     return 270;
+}
+
+//! Legge tutti i sensori e memorizza il risultato in una classe che e'
+//! poi immagazzinata in un std::vector, insieme alla marca temporale
+void Automa::leggiSensori(TxRxcmd &com, Sensori &S){
+  int d2;
+  unsigned int nextTime ;
+  // legge tutti i sensori, assegna un time stamp e li memorizza nel vettore S1
+  for (int i = 0; i < 7; i++){
+    //stampa(outF, "invio il comando 'D' 3 ");
+    com.sendCmd('D', i);
+    /// attende 5 ms
+    nextTime = millis () + 5 ;
+    while(millis() < nextTime);
+
+    /// legge il buffer di ricezione e memorizza i bytes disponibili
+    if (com.receiveCmd()){
+      d2 = com.convertiDatoRaw();
+      S.valore[i] = d2;
+    }
+    else
+      S.valore[i] = -30000;
+  }
+  S.setTime();  // imposta il timestamp
+  S1.push_back(S);
 }

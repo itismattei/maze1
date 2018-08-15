@@ -27,6 +27,9 @@ using namespace std;
 
 #include <list>
 
+#include <stdio.h>      /* printf */
+#include <time.h>       /* time_t, struct tm, difftime, time, mktime */
+
 /// programma principale
 ///
 
@@ -41,8 +44,24 @@ int main(){
 	list<Cella>::iterator itC;
 	Cella tc, tc1;
 
+
 	cout << tc.myID << endl;
 	cout << tc1.myID << endl;
+
+  time_t timer;
+  struct tm y2k = {0};
+	struct tm * timeinfo;
+  double seconds;
+
+  y2k.tm_hour = 0;   y2k.tm_min = 0; y2k.tm_sec = 0;
+  y2k.tm_year = 100; y2k.tm_mon = 0; y2k.tm_mday = 1;
+
+  // timestamp
+  time(&timer);  /* get current time; same as: timer = time(NULL)  */
+  timeinfo = localtime (&timer);
+	cout << (int)timer << " " << timeinfo->tm_mday << "/" << timeinfo->tm_mon << endl;
+	cout << timeinfo->tm_year + 1900 << " " << timeinfo->tm_hour << " " <<timeinfo->tm_min << endl;
+  cout << asctime(timeinfo) << endl;
 
 	L1.push_back(tc);
 	L1.push_back(tc1);
@@ -53,6 +72,8 @@ int main(){
 		cout << "from iterator: " << (*itC).myID << endl;
 	}
 	exit(0);
+
+
 
 	/// collego PIPE ad uart
 	PIPE.connect(&uart);
