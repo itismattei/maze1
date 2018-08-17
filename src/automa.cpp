@@ -16,7 +16,8 @@ using namespace std;
 
 int Automa::run(TxRxcmd &com, list<Cella> &L1){
 
-  Cella qTemp;
+  Cella     qTemp;
+  Sensori   S;
   unsigned int nextTime ;
   unsigned int microseconds = 600000;   //200 ms
 
@@ -59,15 +60,18 @@ int Automa::run(TxRxcmd &com, list<Cella> &L1){
         /// AVANZA
         com.sendCmd('F');
         /// attende 5 ms
-        nextTime = millis () + 5 ;
-        while(millis() < nextTime);
+        sleepMs(5); /// verificarne il reale funzionamento. Finisce di inviare
+        // il comando oppure si ferma prima????
+        //nextTime = millis () + 5 ;
+        //while(millis() < nextTime);
         /// legge il buffer di ricezione e memorizza i bytes disponibili
         if(com.receiveCmd()){
-          ///legge l'encoder
-          com.sendCmd('D', 10);
-          /// attende 5 ms
-          nextTime = millis () + 5 ;
-          while(millis() < nextTime);
+          /// avendo ricevuto conferma dell'avanzamento si mette a riposo
+          /// per 200 ms
+          sleepMs(200);
+          /// legge tutti i Sensori e memorizza il risultato in VS1
+          /// restituisce una copia delle letture in S
+          leggiSensori(com, S);
 
           /// legge il buffer di ricezione e memorizza i bytes disponibili
           if (com.receiveCmd()){
@@ -77,7 +81,7 @@ int Automa::run(TxRxcmd &com, list<Cella> &L1){
               if (recordData){
                 /// registra i dati della cella
                 recordData = false;
-                registraCella(qTemp, com, outF);
+                registraCella(qTemp, S, outF);
                 qTemp.upID();   // aggirna id della cella
                 L1.push_back(qTemp);
               }
@@ -97,109 +101,23 @@ int Automa::run(TxRxcmd &com, list<Cella> &L1){
       break;
 
       case DESTRA:
-        com.sendCmd('R');
-        /// attende 5 ms
-        nextTime = millis () + 5 ;
-        while(millis() < nextTime);
-        /// legge il buffer di ricezione e memorizza i bytes disponibili
-        if (com.receiveCmd()){
-          stato = SINISTRA;
-        }
-        else
-          cout<< "errore di comunicazione"<< endl;
-        cout << "stato " << stato << endl;
-        sleep(2);
 
       break;
 
 
       case SINISTRA:
-        ///legge l'encoder
-        com.sendCmd('D', 10);
-        /// attende 5 ms
-        nextTime = millis () + 5 ;
-        while(millis() < nextTime);
-
-        /// legge il buffer di ricezione e memorizza i bytes disponibili
-
-        if (com.receiveCmd()){
-          int valore = com.convertiDatoRaw();
-          cout << endl <<  "encoder " << valore << endl;
-          distEncoder = valore;
-          stato = 3;
-
-        }
-        else
-          cout<< "errore di comunicazione"<< endl;
 
         sleep(1);
       break;
 
       case FINE:
 
-        com.sendCmd('F');
-        /// attende 5 ms
-        nextTime = millis () + 5 ;
-        while(millis() < nextTime);
-        /// legge il buffer di ricezione e memorizza i bytes disponibili
 
-        if (com.receiveCmd()){
-
-          ///legge il sensore di gas
-          com.sendCmd('D', 13);
-          /// attende 5 ms
-          nextTime = millis () + 5 ;
-          while(millis() < nextTime);
-
-          if (com.receiveCmd()){
-            int valore = com.convertiDatoRaw();
-            cout << "valore Alcool " << valore << endl;
-            if(valore>3200){
-              stato = FINE;
-              cout << "stato " << stato << endl;
-               }
-                else
-                stato = STOP;
-
-              }
-              else
-                cout<< "errore di comunicazione"<< endl;
-              /*printf("%d\n", PIPE.convertiDatoRaw());
-              d1 = PIPE.convertiDatoRaw();
-              outF << d1 << endl;
-              if(d1 > 300){
-                PIPE.sendCmd('F');
-
-              }*/
-            }
 
       break;
 
 
       case STOP:
-        sleep(1);
-        cout << "Fermo!" << endl;
-        stato = STOP;
-      break;
-
-      case RESET:
-        ///legge l'encoder
-        com.sendCmd('D', 10);
-        /// attende 5 ms
-        nextTime = millis () + 5 ;
-        while(millis() < nextTime);
-
-        if (com.receiveCmd()){
-          int valore = com.convertiDatoRaw();
-          distEncoder = valore;
-          cout <<  "encoder reset " << (distEncoder) << endl;
-          stato = INIZIO;
-          }
-          else{
-            cout<< "errore di comunicazione"<< endl;
-            stato = STOP;
-          }
-
 
         sleep(1);
         break;
@@ -207,19 +125,6 @@ int Automa::run(TxRxcmd &com, list<Cella> &L1){
 
       case GASREAD:
         ///legge il sensore di gas
-        com.sendCmd('D', 13);
-        /// attende 5 ms
-        nextTime = millis () + 5 ;
-        while(millis() < nextTime);
-
-        if (com.receiveCmd()){
-          int valore = com.convertiDatoRaw();
-          cout << "valore Alcool " << valore << endl;
-
-          stato = GASREAD;
-        }
-        else
-          cout<< "errore di comunicazione"<< endl;
 
         sleep(1);
       break;
@@ -360,109 +265,39 @@ int Automa::run(TxRxcmd &com, list<Cella> &L1){
   return 0;
 }
 
+//! Assegna la disposizione degli ostacoli, l'agolo di percorrenza rispetto
+//! al sistema di riferimento assoluto, le coordinate di cella.
+void Automa::registraCella(Cella &C, Sensori &s, ofstream &outF){
 
-void Automa::registraCella(Cella &C, TxRxcmd &com, ofstream &outF){
+  /// muro di sinistra
+  if (s.valore[1] < SPAZIO_LIBERO || s.valore[2] < SPAZIO_LIBERO) {
+    /// presenza del muro
+    C.mLato[0] = 1;
+  }
 
+  if (s.valore[0] < SPAZIO_LIBERO_ANT) {
+    /// presenza del muro anteriore
+    C.mLato[1] = 1;
+  }
+
+  if (s.valore[3] < SPAZIO_LIBERO || s.valore[4] < SPAZIO_LIBERO) {
+    /// presenza del muro
+    C.mLato[2] = 1;
+  }
     int nextTime;
-    /// muro di sinistra
-    stampa(outF, "invio il comando 'D' 2 ");
-    com.sendCmd('D', 2);
-    /// attende 5 ms
-    nextTime = millis () + 10 ;
-    while(millis() < nextTime);
-    int d1, d2;
-    /// legge il buffer di ricezione e memorizza i bytes disponibili
+  // l'angolo letto non sara' proprio un multiplo di 90 e va quindi
+  // arrotondato
+  C.mAngolo = rangeAngle(s.valore[5]);
 
-    if (com.receiveCmd()){
-      d1 = com.convertiDatoRaw();
-      cout << d1 << endl;
-      outF << d1 << endl;
-    }
+  /// valuta se e' la prima cella ad essere memorizzata oppure una successiva
+  if (Prec.mR == -100)
+    /// prima registrazione
+    C.mR = C.mC = 0;
+  else
+    /// registrazioni successive
+    setCoordCella(C);
 
-    stampa(outF, "invio il comando 'D' 3 ");
-    com.sendCmd('D', 3);
-    /// attende 5 ms
-    nextTime = millis () + 10 ;
-    while(millis() < nextTime);
-
-    /// legge il buffer di ricezione e memorizza i bytes disponibili
-
-    if (com.receiveCmd()){
-      d2 = com.convertiDatoRaw();
-      cout << d2 << endl;
-      outF << d2 << endl;
-      if (d1 < SPAZIO_LIBERO || d2 < SPAZIO_LIBERO) {
-        /// presenza del muro
-        C.mLato[0] = 1;
-      }
-    }
-
-    stampa(outF, "invio il comando 'D' 1 ");
-    /// muro anteriore
-    com.sendCmd('D', 1);
-    /// attende 5 ms
-    nextTime = millis () + 10 ;
-    while(millis() < nextTime);
-
-    if (com.receiveCmd()){
-      d1 = com.convertiDatoRaw();
-      cout << d1 << endl;
-      outF << d1 << endl;
-      if (d1 < SPAZIO_LIBERO_ANT) {
-        /// presenza del muro anteriore
-        C.mLato[1] = 1;
-      }
-    }
-
-    /// muro di destra
-    stampa(outF, "invio il comando 'D' 4 ");
-    com.sendCmd('D', 4);
-    /// attende 5 ms
-    nextTime = millis () + 10 ;
-    while(millis() < nextTime);
-    /// legge il buffer di ricezione e memorizza i bytes disponibili
-
-    if (com.receiveCmd()){
-      d1 = com.convertiDatoRaw();
-      cout << d1 << endl;
-      outF << d1 << endl;
-    }
-
-    stampa(outF, "invio il comando 'D' 5 ");
-    com.sendCmd('D', 5);
-    /// attende 5 ms
-    nextTime = millis () + 10 ;
-    while(millis() < nextTime);
-
-    /// legge il buffer di ricezione e memorizza i bytes disponibili
-    if (com.receiveCmd()){
-      d2 = com.convertiDatoRaw();
-      cout << d2 << endl;
-      outF << d2 << endl;
-      if (d1 < SPAZIO_LIBERO || d2 < SPAZIO_LIBERO) {
-        /// presenza del muro
-        C.mLato[2] = 1;
-      }
-    }
-
-    // qui si valuta la rotazione dell'asse di avanzamento rispetto all'angolo
-    // iniziale
-    // sensore 6: giroscopio
-    stampa(outF, "invio il comando 'D' 6 ");
-    com.sendCmd('D', 6);
-    /// attende 5 ms
-    nextTime = millis () + 10 ;
-    while(millis() < nextTime);
-
-    /// legge il buffer di ricezione e memorizza i bytes disponibili
-    if (com.receiveCmd()){
-      d2 = com.convertiDatoRaw();
-      cout << d2 << endl;
-      outF << d2 << endl;
-      // l'angolo letto non sara' proprio un multiplo di 90 e va quindi
-      // arrotondato
-      C.mAngolo = rangeAngle(d2);
-    }
+  Prec = C;  /// copia la cella attuale in quella precedente
 }
 
 
@@ -501,10 +336,11 @@ void Automa::leggiSensori(TxRxcmd &com, Sensori &S){
   int d2;
   unsigned int nextTime ;
   // legge tutti i sensori, assegna un time stamp e li memorizza nel vettore S1
-  for (int i = 0; i < 7; i++){
+  for (int i = 0; i < 6; i++){
     //stampa(outF, "invio il comando 'D' 3 ");
     com.sendCmd('D', i);
     /// attende 5 ms
+    //sleepMs(5);
     nextTime = millis () + 5 ;
     while(millis() < nextTime);
 
@@ -516,6 +352,54 @@ void Automa::leggiSensori(TxRxcmd &com, Sensori &S){
     else
       S.valore[i] = -30000;
   }
+  /// legge l'encoder
+  com.sendCmd('D', 10);
+  /// attende 5 ms
+  //sleepMs(5);
+  nextTime = millis () + 5 ;
+  while(millis() < nextTime);
+
+  /// legge il buffer di ricezione e memorizza i bytes disponibili
+  if (com.receiveCmd()){
+    d2 = com.convertiDatoRaw();
+    S.valore[6] = d2;
+  }
+  else
+    S.valore[6] = -30000;
+
   S.setTime();  // imposta il timestamp
-  S1.push_back(S);
+  VS1.push_back(S);
+}
+
+//! Imposta le coordinate di cella confrontando da quella precedente
+//! e dall'angolo di orientamento.
+void Automa::setCoordCella(Cella &C){
+  /*
+  0°      :   xk+1 = xk      ===  yk+1 = yk + 1
+  90°     :   xk+1 = xk + 1  ===  yk+1 = yk
+  -90°    :   xk+1 = xk - 1  ===  yk+1 = yk
+  +/-180° :   xk+1 = xk      ===  yk+1 = yk - 1
+  */
+  switch(C.mAngolo){
+    
+    case 0:
+      C.mR = Prec.mR; C.mC = Prec.mC + 1;
+    break;
+
+    case 90:
+      C.mR = Prec.mR + 1; C.mC = Prec.mC;
+    break;
+
+    case -90:
+      C.mR = Prec.mR - 1; C.mC = Prec.mC;
+    break;
+
+    case 180:
+    case -180:
+      C.mR = Prec.mR; C.mC = Prec.mC - 1;
+    break;
+
+    default:
+    cout << " Impossibile assegnare le coordinate di cella" << endl;
+  }
 }

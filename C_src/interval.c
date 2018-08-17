@@ -43,3 +43,24 @@ unsigned int millis (void)
 
   return (uint32_t)(now - epochMilli) ;
 }
+
+
+/*
+    inizializza la variabile epochMilli e cosi' e' possibile misurare i millisecondi
+    dall'inizializzazione della variabile
+*/
+void millisInit(void){
+  struct timeval tv ;
+  uint64_t now ;
+
+  gettimeofday (&tv, NULL) ;
+  epochMilli  = (uint64_t)tv.tv_sec * (uint64_t)1000 + (uint64_t)(tv.tv_usec / 1000) ;
+}
+
+
+/*
+    Effettua uno sleep di millis millisecondi
+*/
+void sleepMs(uint32_t millis){
+  usleep(millis * 1000);
+}

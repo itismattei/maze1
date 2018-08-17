@@ -28,7 +28,7 @@ using namespace std;
 #include <list>
 
 #include <stdio.h>      /* printf */
-#include <time.h>       /* time_t, struct tm, difftime, time, mktime */
+#include <sys/time.h>       /* time_t, struct tm, difftime, time, mktime */
 
 /// programma principale
 ///
@@ -48,20 +48,34 @@ int main(){
 	cout << tc.myID << endl;
 	cout << tc1.myID << endl;
 
+	millisInit();
   time_t timer;
+	cout << "millis " << millis() << endl;
+	sleepMs(50);
+	cout << "millis " << millis() << endl;
+
+	struct timeval tempo;
   struct tm y2k = {0};
 	struct tm * timeinfo;
   double seconds;
+
 
   y2k.tm_hour = 0;   y2k.tm_min = 0; y2k.tm_sec = 0;
   y2k.tm_year = 100; y2k.tm_mon = 0; y2k.tm_mday = 1;
 
   // timestamp
-  time(&timer);  /* get current time; same as: timer = time(NULL)  */
+  //time(&timer);  /* get current time; same as: timer = time(NULL)  */
+	gettimeofday(&tempo, NULL);
+	timer = tempo.tv_sec;
   timeinfo = localtime (&timer);
 	cout << (int)timer << " " << timeinfo->tm_mday << "/" << timeinfo->tm_mon << endl;
 	cout << timeinfo->tm_year + 1900 << " " << timeinfo->tm_hour << " " <<timeinfo->tm_min << endl;
   cout << asctime(timeinfo) << endl;
+	//gettimeofday(&tempo, NULL);
+	cout << timeinfo->tm_sec << " ";
+	cout << tempo.tv_sec << " " << tempo.tv_usec << endl;
+	/// la differenza tra tv_sec fornisce il tempo in secondi; la differenza tra
+	/// tv_usec fornisce la differenza in microsecondi
 
 	L1.push_back(tc);
 	L1.push_back(tc1);
@@ -71,9 +85,8 @@ int main(){
 	for(itC = L1.begin(); itC != L1.end(); ++itC){
 		cout << "from iterator: " << (*itC).myID << endl;
 	}
+
 	exit(0);
-
-
 
 	/// collego PIPE ad uart
 	PIPE.connect(&uart);

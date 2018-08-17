@@ -2,6 +2,9 @@
 
 
 #include "cella.h"
+#include <iostream>
+
+using namespace std;
 
 /*
  * cella.cpp
@@ -16,12 +19,14 @@ int Cella::ID = 0;
 Cella::Cella() {
 	// TODO Auto-generated constructor stub
 	mColore = 0;
-	myID = ID += 1;
+	myID = ID;
+	ID += 1;
 	mAngolo = 0;
 	mC = mR = -100;
 	//! inizializza i lati a 0 (liberi)
 	for (int i = 0; i < 4; i++)
 		mLato[i] = 0;
+	//cout << "cella " << myID << endl;
 }
 
 Cella::~Cella() {
@@ -38,7 +43,7 @@ Cella::Cella( const Cella & q){
 		mC = q.mC;
 		mR = q.mR;
 		mAngolo = q.mAngolo;
-		// la copia ha comunque identificatore differente
+		// la copia ha  identificatore identico
 	}
 }
 

@@ -14,9 +14,10 @@
 class Automa {
 
 public:
-  Automa(){ stato = statoPrec = INIZIO; distEncoder = 0;}
+  Automa(){ stato = statoPrec = INIZIO; distEncoder = 0;
+            gettimeofday(&tempo0, NULL);}
   int run(TxRxcmd &, list<Cella> &);
-  void registraCella(Cella &, TxRxcmd &, ofstream &);
+  void registraCella(Cella &, Sensori &, ofstream &);
   void leggiSensori(TxRxcmd &, Sensori &);
 
   int stato;
@@ -40,7 +41,10 @@ private:
    *  \return int: angolo arrotondato
    */
   int rangeAngle(int);
-  vector<Sensori> S1;
+  void setCoordCella(Cella &C);
+  vector<Sensori> VS1;
+  Cella Prec;
+  struct timeval tempo0, tempo;
 
 };
 
