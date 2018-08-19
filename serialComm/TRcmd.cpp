@@ -155,8 +155,11 @@ void TxRxcmd::connect(SerialComm * p){
 			printf("aperta la seriale\n");
 #endif
 		}
-		else
+		else{
 			isOK = false;
+			std::cout << "impossibile aprire la seriale" << '\n';
+			//exit (1);
+		}
 	}
 }
 

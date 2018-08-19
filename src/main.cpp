@@ -86,13 +86,17 @@ int main(){
 		cout << "from iterator: " << (*itC).myID << endl;
 	}
 
-	exit(0);
+
 
 	/// collego PIPE ad uart
 	PIPE.connect(&uart);
+	/// passo il PIPE al metodo run();
+	A.setCOM(&PIPE);
+	A.run(L1);
+	exit(0);
 
   /// avvia l'esecuzione dell'automa
-	if (A.run(PIPE, L1) != 0){
+	if (A.run(L1) != 0){
 		cout << "Automa improvvisamente interrotto!" <<endl;
 		exit (-1);
 	}

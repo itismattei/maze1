@@ -15,10 +15,11 @@ class Automa {
 
 public:
   Automa(){ stato = statoPrec = INIZIO; distEncoder = 0;
-            gettimeofday(&tempo0, NULL);}
-  int run(TxRxcmd &, list<Cella> &);
+            gettimeofday(&tempo0, NULL); COM = NULL;}
+  void setCOM(TxRxcmd *ch){ if (ch != NULL) COM = ch; }
+  int run(list<Cella> &);
   void registraCella(Cella &, Sensori &, ofstream &);
-  void leggiSensori(TxRxcmd &, Sensori &);
+  void leggiSensori(Sensori &);
 
   int stato;
   int statoPrec;
@@ -42,9 +43,11 @@ private:
    */
   int rangeAngle(int);
   void setCoordCella(Cella &C);
+  int isToRecord();
   vector<Sensori> VS1;
   Cella Prec;
   struct timeval tempo0, tempo;
+  TxRxcmd *COM;
 
 };
 

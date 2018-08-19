@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
+#include <stdlib.h>
 #include "interval.h"
 
 using namespace std;
@@ -14,7 +15,7 @@ using namespace std;
 #include "automa.h"
 
 
-int Automa::run(TxRxcmd &com, list<Cella> &L1){
+int Automa::run(list<Cella> &L1){
 
   Cella     qTemp;
   Sensori   S;
@@ -28,6 +29,11 @@ int Automa::run(TxRxcmd &com, list<Cella> &L1){
 
   L1.push_back(qTemp);
 
+  if (COM == NULL){
+    /// manca il canale di Comunicazione
+    cerr << "canale di comunicazione assente" << endl;
+    exit(-2);
+  }
 
   /// apro un file in scrittura
 	ofstream outF("dati.txt", ios::app);
@@ -48,7 +54,7 @@ int Automa::run(TxRxcmd &com, list<Cella> &L1){
     outF.open("dati.txt", ios::app);
     ++contatore;
     int j;
-
+    recordData = isToRecord();
 
     // 1
     switch(stato){
@@ -58,31 +64,30 @@ int Automa::run(TxRxcmd &com, list<Cella> &L1){
         cout << contatore << " invio il comando 'F' ";
         outF << contatore <<" invio il comando 'F' ";
         /// AVANZA
-        com.sendCmd('F');
+        COM->sendCmd('F');
         /// attende 5 ms
         sleepMs(5); /// verificarne il reale funzionamento. Finisce di inviare
         // il comando oppure si ferma prima????
         //nextTime = millis () + 5 ;
         //while(millis() < nextTime);
         /// legge il buffer di ricezione e memorizza i bytes disponibili
-        if(com.receiveCmd()){
+        if(COM->receiveCmd()){
           /// avendo ricevuto conferma dell'avanzamento si mette a riposo
           /// per 200 ms
           sleepMs(200);
           /// legge tutti i Sensori e memorizza il risultato in VS1
           /// restituisce una copia delle letture in S
-          leggiSensori(com, S);
+          leggiSensori(S);
 
           /// legge il buffer di ricezione e memorizza i bytes disponibili
-          if (com.receiveCmd()){
-            int valore = com.convertiDatoRaw();
+          if (COM->receiveCmd()){
+            int valore = COM->convertiDatoRaw();
             cout << endl <<  "encoder " << (valore - distEncoder) << endl;
             if ((valore - distEncoder) < 200 && (valore - distEncoder) > 100){
               if (recordData){
                 /// registra i dati della cella
                 recordData = false;
                 registraCella(qTemp, S, outF);
-                qTemp.upID();   // aggirna id della cella
                 L1.push_back(qTemp);
               }
             }
@@ -297,13 +302,18 @@ void Automa::registraCella(Cella &C, Sensori &s, ofstream &outF){
     /// registrazioni successive
     setCoordCella(C);
 
+  C.upID();   // aggirna id della cella
   Prec = C;  /// copia la cella attuale in quella precedente
+  gettimeofday(&tempo, NULL); // imposta il timestamp attuale
+  /// stampa un po' di output su file di log
+  outF << "Registata cella R: " << C.mR << " C: " << C.mC;
+  outF << "angolo: " <<C.mAngolo <<  " | ts: " << tempo.tv_sec << endl;
 }
 
 
 void Automa::stampa(ofstream &outF, string stringa){
   cout << stringa << endl;
-  outF << stringa;
+  outF << stringa << endl;
 }
 
 
@@ -332,36 +342,36 @@ int Automa::rangeAngle(int val){
 
 //! Legge tutti i sensori e memorizza il risultato in una classe che e'
 //! poi immagazzinata in un std::vector, insieme alla marca temporale
-void Automa::leggiSensori(TxRxcmd &com, Sensori &S){
+void Automa::leggiSensori(Sensori &S){
   int d2;
   unsigned int nextTime ;
   // legge tutti i sensori, assegna un time stamp e li memorizza nel vettore S1
   for (int i = 0; i < 6; i++){
     //stampa(outF, "invio il comando 'D' 3 ");
-    com.sendCmd('D', i);
+    COM->sendCmd('D', i);
     /// attende 5 ms
     //sleepMs(5);
     nextTime = millis () + 5 ;
     while(millis() < nextTime);
 
     /// legge il buffer di ricezione e memorizza i bytes disponibili
-    if (com.receiveCmd()){
-      d2 = com.convertiDatoRaw();
+    if (COM->receiveCmd()){
+      d2 = COM->convertiDatoRaw();
       S.valore[i] = d2;
     }
     else
       S.valore[i] = -30000;
   }
   /// legge l'encoder
-  com.sendCmd('D', 10);
+  COM->sendCmd('D', 10);
   /// attende 5 ms
   //sleepMs(5);
   nextTime = millis () + 5 ;
   while(millis() < nextTime);
 
   /// legge il buffer di ricezione e memorizza i bytes disponibili
-  if (com.receiveCmd()){
-    d2 = com.convertiDatoRaw();
+  if (COM->receiveCmd()){
+    d2 = COM->convertiDatoRaw();
     S.valore[6] = d2;
   }
   else
@@ -381,7 +391,7 @@ void Automa::setCoordCella(Cella &C){
   +/-180° :   xk+1 = xk      ===  yk+1 = yk - 1
   */
   switch(C.mAngolo){
-    
+
     case 0:
       C.mR = Prec.mR; C.mC = Prec.mC + 1;
     break;
@@ -401,5 +411,39 @@ void Automa::setCoordCella(Cella &C){
 
     default:
     cout << " Impossibile assegnare le coordinate di cella" << endl;
+  }
+}
+
+/*! \fn void Automa::isToRecord(void);
+ *  \brief Algoritmo che stabilisce quando e' ora di registrare una cella.
+ *  \param int.
+ *  \return void
+ */
+int Automa::isToRecord(void){
+
+  /*  per capire se una cella e' nuova rispetto alla precedente si potrebbero usare
+  *   i seguenti criteri:
+  *   1. differenza di lunghezza misurata dall'encoder,
+  *   2. differenza di lunghezza registata dal sensore 1
+  *   Dati da usare:
+  *   a. std::vector VS1 aggiornata ad ogni lettura sui sensori e con indicazione
+          del timeStamp
+      b. std::list L1 come parametro del metodo run() che contiene tutte le celle
+          registrate. Il caricamento avviene con push_back e quindi l'ultima Cella
+          della lista e' anche l'ultima cella caricata.
+      c. un copia dell'ultima cella registrata e' presente nell'oggetto Cella
+          denominato Prec
+  */
+
+  /// controlla il tempo attuale con quello dell'ultima lettura dei Sensori
+  uint64_t usecSTime, usec;
+  int numElem = VS1.size();
+  Sensori S = VS1[numElem - 1];
+  gettimeofday(&tempo, NULL);
+  usecSTime = S.timeStamp * 1000000 + S.usec;
+  usec = tempo.tv_sec * 1000000 + tempo.tv_usec;
+  if (usec - usecSTime > 100000){
+    // sono passati piu' di 100 ms e serve campionare i sensori
+    leggiSensori(S);
   }
 }
