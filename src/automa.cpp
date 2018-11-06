@@ -45,7 +45,7 @@ int Automa::run(list<Cella> &L1){
   ///// STATI DI AVVIO
   /////
   //stato = GASREAD;
-  stato = RESET;
+  stato = AVANZA;
   //! ciclo principaleAD	256
   recordData = true;
 
@@ -53,7 +53,7 @@ int Automa::run(list<Cella> &L1){
     //! apre il debug su file
     outF.open("dati.txt", ios::app);
     ++contatore;
-    int j;
+
     recordData = isToRecord();
 
     // 1
@@ -438,12 +438,21 @@ int Automa::isToRecord(void){
   /// controlla il tempo attuale con quello dell'ultima lettura dei Sensori
   uint64_t usecSTime, usec;
   int numElem = VS1.size();
-  Sensori S = VS1[numElem - 1];
+  Sensori S_0, S_1;
+  if (numElem > 1)
+    S_0 = VS1[numElem - 2];
+  if (numElem > 0)
+    S_1 = VS1[numElem - 1];
   gettimeofday(&tempo, NULL);
-  usecSTime = S.timeStamp * 1000000 + S.usec;
+  usecSTime = S_1.timeStamp * 1000000 + S_1.usec;
   usec = tempo.tv_sec * 1000000 + tempo.tv_usec;
   if (usec - usecSTime > 100000){
     // sono passati piu' di 100 ms e serve campionare i sensori
-    leggiSensori(S);
+    S_0 = S_1;
+    leggiSensori(S_1);  ///aggiorna anche VS1 inserendo l'elemento in fondo
   }
+  /// S_0 ed S_1 contengono le ultime due letture ma non sono associati a nessuna
+  /// cella e quindi con le utlime due letture potrei vendere sempre una distanza
+  /// inferiore alla lunghezza di cella e sbagliare deducendo che non ho mai
+  /// cambiato cella.
 }

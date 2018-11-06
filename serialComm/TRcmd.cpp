@@ -173,6 +173,8 @@ int TxRxcmd::receiveCmd(void){
 		locBuff[i] = 0;
  	while  (numOLD < 5 && STATO < 100){
 		num = scPtr->readBuff(rxBuff);
+		if (num == -1)
+			break;	/// ricevuto errore dalla readBuff;
 		/// segno il numero dei byte ricevuti
 		numOLD += num;
 		//printf("Ric %d bytes\n", num);
@@ -209,7 +211,7 @@ int TxRxcmd::receiveCmd(void){
 
 	//	cout << "bytes letti " << num << " stato " << STATO << endl;
 	}
-
+	cout << "uscito dal ciclo di receiveCommand " << endl;
 	if (numOLD < 5){
 		isOK = false;
 	}

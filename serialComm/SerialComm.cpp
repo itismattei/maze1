@@ -29,7 +29,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-/// 
+///
 /// funzioni di base per l'uso della UART
 ///
 int serialOpen (const char *device, const int baud)
@@ -120,12 +120,12 @@ void serialPutchar (const int fd, const unsigned char c){
 /// verifica la presenza di caratteri da leggere
 ///
 int serialDataAvail (const int fd){
-	
+
 	int result ;
-	
+
 	if (ioctl (fd, FIONREAD, &result) == -1)
 	return -1 ;
-	
+
 	return result ;
 }
 
@@ -138,12 +138,12 @@ int serialDataAvail (const int fd){
  */
 
 int serialGetchar (const int fd){
-  
+
 	uint8_t x ;
 
 	if (read (fd, &x, 1) != 1)
 	return -1 ;
-	
+
 	return ((int)x) & 0xFF ;
 }
 
@@ -211,7 +211,15 @@ int SerialComm::writeBuff(char * buff, int num){
 int SerialComm::readBuff(char *buff){
 	ind = 0;
 	/// interroga la seriale sulla disponibilita' di bytes
-	while (serialDataAvail (mfd)){
+  bool leggi = true;
+	while (leggi){
+    int bytes = serialDataAvail (mfd);
+    if (bytes <= 0){
+      /// esce dal while
+      break;
+      ind = bytes;
+    }
+    //cout << serialDataAvail (mfd) << " in serial data available\n";
 		//printf("ricevuto \n");
 		//printf (" -> %3d", serialGetchar (fd)) ;
 		mBuff[ind] = serialGetchar(mfd);
@@ -250,7 +258,7 @@ int SerialComm::sendBuff(int n){
 		serialPutchar (mfd, mBuff[0]);
 	else
 		if(n > 1){
-			
+
 			for (int i = 0; i < n; i++)
 				/// invia n bytes sulla UART
 				serialPutchar (mfd, mBuff[i]);
